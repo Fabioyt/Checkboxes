@@ -1,41 +1,30 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const mysql = require('mysql2');
+const mongoose = require('mongoose');
 const path = require('path');
+require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-// Verbinde mit der MySQL-Datenbank von InfinityFree
-const db = mysql.createConnection({
-  host: process.env.DB_HOST,  
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME
+// Verbinde mit MongoDB Atlas
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => {
+  console.log('Mit MongoDB verbunden');
+}).catch(err => {
+  console.error('MongoDB-Verbindung fehlgeschlagen:', err.message);
 });
 
-db.connect(err => {
-  if (err) {
-    console.error('MySQL-Verbindung fehlgeschlagen:', err.message);
-  } else {
-    console.log('Mit MySQL verbunden');
-  }
+const checkboxSchema = new mongoose.Schema({
+  id: Number,
+  color: String
 });
 
-const createTableQuery = `
-  CREATE TABLE IF NOT EXISTS checkboxes (
-    id INT PRIMARY KEY,
-    color VARCHAR(7)
-  )
-`;
-
-db.query(createTableQuery, (err, results) => {
-  if (err) {
-    console.error('Fehler beim Erstellen der Tabelle:', err.message);
-  }
-});
+const Checkbox = mongoose.model('Checkbox', checkboxSchema);
 
 // Statischer Dateiserver für das öffentliche Verzeichnis
 app.use(express.static(path.join(__dirname, 'public')));
@@ -43,30 +32,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 io.on('connection', (socket) => {
   console.log('Ein Benutzer hat sich verbunden');
   
-  socket.on('checkboxClicked', (data) => {
+  socket.on('checkboxClicked', async (data) => {
     const color = getRandomColor();
-    const query = `
-      INSERT INTO checkboxes (id, color) VALUES (?, ?)
-      ON DUPLICATE KEY UPDATE color = VALUES(color)
-    `;
-    db.query(query, [data.id, color], (err, results) => {
-      if (err) {
-        console.error('Fehler beim Aktualisieren der Checkbox:', err.message);
-      } else {
-        io.emit('checkboxUpdate', { id: data.id, color });
-      }
-    });
+    await Checkbox.findOneAndUpdate({ id: data.id }, { color }, { upsert: true });
+    io.emit('checkboxUpdate', { id: data.id, color });
   });
 
-  socket.on('getInitialData', () => {
-    const query = 'SELECT * FROM checkboxes';
-    db.query(query, (err, results) => {
-      if (err) {
-        console.error('Fehler beim Abrufen der Daten:', err.message);
-      } else {
-        socket.emit('initialData', results);
-      }
-    });
+  socket.on('getInitialData', async () => {
+    const checkboxes = await Checkbox.find({});
+    socket.emit('initialData', checkboxes);
   });
 
   socket.on('disconnect', () => {
@@ -77,11 +51,4 @@ io.on('connection', (socket) => {
 function getRandomColor() {
   const letters = '0123456789ABCDEF';
   let color = '#';
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
-  }
-  return color;
-}
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`));
+  for (let i = 0; i
