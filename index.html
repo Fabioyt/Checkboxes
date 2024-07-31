@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>One Million Checkboxes</title>
+  <title>Interactive Grid</title>
   <style>
     .checkbox-grid {
       display: grid;
       grid-template-columns: repeat(50, 20px);
-      gap: 5px;
+      gap: 1px;
     }
     .checkbox-grid div {
       width: 20px;
@@ -14,14 +14,38 @@
       border: 1px solid #ccc;
       cursor: pointer;
     }
+    .palette {
+      display: flex;
+      margin-bottom: 20px;
+    }
+    .palette div {
+      width: 20px;
+      height: 20px;
+      margin-right: 5px;
+      cursor: pointer;
+      border: 1px solid #000;
+    }
   </style>
 </head>
 <body>
+  <div class="palette">
+    <div style="background-color: #FF0000;" onclick="selectColor('#FF0000')"></div>
+    <div style="background-color: #00FF00;" onclick="selectColor('#00FF00')"></div>
+    <div style="background-color: #0000FF;" onclick="selectColor('#0000FF')"></div>
+    <div style="background-color: #FFFF00;" onclick="selectColor('#FFFF00')"></div>
+    <div style="background-color: #FF00FF;" onclick="selectColor('#FF00FF')"></div>
+    <div style="background-color: #00FFFF;" onclick="selectColor('#00FFFF')"></div>
+  </div>
   <div id="checkbox-grid" class="checkbox-grid"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
     const grid = document.getElementById('checkbox-grid');
+    let selectedColor = '#FF0000';
+
+    function selectColor(color) {
+      selectedColor = color;
+    }
 
     socket.emit('getInitialData');
 
@@ -31,15 +55,14 @@
         positions.set(cb.id, cb.color);
       });
 
-      for (let i = 0; i < 10000; i++) {
+      for (let i = 0; i < 1000; i++) {
         const div = document.createElement('div');
         div.dataset.id = i;
         if (positions.has(i)) {
           div.style.backgroundColor = positions.get(i);
         }
         div.addEventListener('click', () => {
-          const color = getRandomColor();
-          socket.emit('checkboxClicked', { id: i, color: color });
+          socket.emit('checkboxClicked', { id: i, color: selectedColor });
         });
         grid.appendChild(div);
       }

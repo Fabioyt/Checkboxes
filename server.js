@@ -38,7 +38,7 @@ io.on('connection', (socket) => {
   console.log('Ein Benutzer hat sich verbunden');
   
   socket.on('checkboxClicked', async (data) => {
-    const color = getRandomColor();
+    const color = data.color;
     await Checkbox.findOneAndUpdate({ id: data.id }, { color }, { upsert: true });
     io.emit('checkboxUpdate', { id: data.id, color });
   });
@@ -64,3 +64,34 @@ function getRandomColor() {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`));
+
+let userCooldowns = {};
+
+io.on('connection', (socket) => {
+  console.log('Ein Benutzer hat sich verbunden');
+  
+  socket.on('checkboxClicked', async (data) => {
+    const userId = socket.id;
+    if (userCooldowns[userId] && userCooldowns[userId] > Date.now()) {
+      socket.emit('cooldown', { timeLeft: userCooldowns[userId] - Date.now() });
+      return;
+    }
+    
+    const color = data.color;
+    await Checkbox.findOneAndUpdate({ id: data.id }, { color }, { upsert: true });
+    io.emit('checkboxUpdate', { id: data.id, color });
+    
+    // Set cooldown for user
+    userCooldowns[userId] = Date.now() + 5000; // 5 seconds cooldown
+  });
+
+  socket.on('getInitialData', async () => {
+    const checkboxes = await Checkbox.find({});
+    socket.emit('initialData', checkboxes);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Ein Benutzer hat die Verbindung getrennt');
+    delete userCooldowns[socket.id];
+  });
+});
