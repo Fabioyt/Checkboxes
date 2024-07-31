@@ -6,9 +6,10 @@
   <style>
     .checkbox-grid {
       display: grid;
+      grid-template-columns: repeat(50, 20px); /* Set initial number of columns */
+      grid-template-rows: repeat(auto-fill, 20px); /* Set initial number of rows */
       gap: 1px;
       justify-content: center;
-      grid-template-columns: repeat(auto-fit, minmax(20px, 1fr));
     }
     .checkbox-grid div {
       border: 1px solid #ccc;
@@ -105,7 +106,7 @@
         const div = createGridCell(i, color);
         grid.appendChild(div);
       }
-      updateGridTemplateColumns();
+      updateGridTemplate();
     });
 
     socket.on('checkboxUpdate', (data) => {
@@ -131,12 +132,14 @@
         cell.style.width = `${cellSize}px`;
         cell.style.height = `${cellSize}px`;
       });
-      updateGridTemplateColumns();
+      updateGridTemplate();
     }
 
-    function updateGridTemplateColumns() {
-      const columns = Math.floor(grid.clientWidth / cellSize);
+    function updateGridTemplate() {
+      const columns = 50; // Set the number of columns you want
       grid.style.gridTemplateColumns = `repeat(${columns}, ${cellSize}px)`;
+      const rows = Math.ceil(1000 / columns); // Adjust based on the number of cells
+      grid.style.gridTemplateRows = `repeat(${rows}, ${cellSize}px)`;
     }
 
     function getRandomColor() {
