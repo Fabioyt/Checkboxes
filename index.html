@@ -95,6 +95,7 @@
     socket.emit('getInitialData');
 
     socket.on('initialData', (checkboxes) => {
+      grid.innerHTML = ''; // Clear the grid
       const positions = new Map();
       checkboxes.forEach(cb => {
         positions.set(cb.id, cb.color);
@@ -105,6 +106,7 @@
         const div = createGridCell(i, color);
         grid.appendChild(div);
       }
+      updateGridTemplate();
     });
 
     socket.on('checkboxUpdate', (data) => {
