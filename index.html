@@ -2,20 +2,20 @@
 <html>
 <head>
   <title>Interactive Grid</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     .checkbox-grid {
       display: grid;
-      grid-template-columns: repeat(50, 20px);
       gap: 1px;
+      justify-content: center;
     }
     .checkbox-grid div {
-      width: 20px;
-      height: 20px;
       border: 1px solid #ccc;
       cursor: pointer;
     }
     .palette {
       display: flex;
+      justify-content: center;
       margin-bottom: 20px;
     }
     .palette div {
@@ -24,6 +24,28 @@
       margin-right: 5px;
       cursor: pointer;
       border: 1px solid #000;
+    }
+    .zoom-buttons {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .zoom-buttons button {
+      margin: 0 10px;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    /* Mobile Styles */
+    @media (max-width: 600px) {
+      .checkbox-grid div {
+        width: 30px;
+        height: 30px;
+      }
+      .palette div {
+        width: 30px;
+        height: 30px;
+      }
     }
   </style>
 </head>
@@ -34,8 +56,11 @@
     <div style="background-color: #0000FF;" onclick="selectColor('#0000FF')"></div>
     <div style="background-color: #FFFF00;" onclick="selectColor('#FFFF00')"></div>
     <div style="background-color: #FF00FF;" onclick="selectColor('#FF00FF')"></div>
-    <div style="background-color: #FFFFFF;" onclick="selectColor('#FFFFFF')"></div>
     <div style="background-color: #00FFFF;" onclick="selectColor('#00FFFF')"></div>
+  </div>
+  <div class="zoom-buttons">
+    <button onclick="zoomIn()">Zoom In</button>
+    <button onclick="zoomOut()">Zoom Out</button>
   </div>
   <div id="checkbox-grid" class="checkbox-grid"></div>
   <script src="/socket.io/socket.io.js"></script>
@@ -43,9 +68,27 @@
     const socket = io();
     const grid = document.getElementById('checkbox-grid');
     let selectedColor = '#FF0000';
+    let cellSize = 20; // Initial cell size
 
     function selectColor(color) {
       selectedColor = color;
+    }
+
+    function createGridCell(id, color) {
+      const div = document.createElement('div');
+      div.dataset.id = id;
+      div.style.width = `${cellSize}px`;
+      div.style.height = `${cellSize}px`;
+      if (color) {
+        div.style.backgroundColor = color;
+      }
+      div.addEventListener('click', () => {
+        socket.emit('checkboxClicked', { id, color: selectedColor });
+      });
+      div.addEventListener('touchstart', () => {
+        socket.emit('checkboxClicked', { id, color: selectedColor });
+      });
+      return div;
     }
 
     socket.emit('getInitialData');
@@ -57,14 +100,8 @@
       });
 
       for (let i = 0; i < 1000; i++) {
-        const div = document.createElement('div');
-        div.dataset.id = i;
-        if (positions.has(i)) {
-          div.style.backgroundColor = positions.get(i);
-        }
-        div.addEventListener('click', () => {
-          socket.emit('checkboxClicked', { id: i, color: selectedColor });
-        });
+        const color = positions.get(i);
+        const div = createGridCell(i, color);
         grid.appendChild(div);
       }
     });
@@ -73,6 +110,26 @@
       const div = grid.querySelector(`div[data-id='${data.id}']`);
       div.style.backgroundColor = data.color;
     });
+
+    function zoomIn() {
+      cellSize += 5;
+      updateGridSize();
+    }
+
+    function zoomOut() {
+      if (cellSize > 10) {
+        cellSize -= 5;
+        updateGridSize();
+      }
+    }
+
+    function updateGridSize() {
+      const cells = document.querySelectorAll('.checkbox-grid div');
+      cells.forEach(cell => {
+        cell.style.width = `${cellSize}px`;
+        cell.style.height = `${cellSize}px`;
+      });
+    }
 
     function getRandomColor() {
       const letters = '0123456789ABCDEF';
