@@ -7,7 +7,6 @@
     .checkbox-grid {
       display: grid;
       grid-template-columns: repeat(50, 20px); /* Set initial number of columns */
-      grid-template-rows: repeat(auto-fill, 20px); /* Set initial number of rows */
       gap: 1px;
       justify-content: center;
     }
@@ -106,12 +105,13 @@
         const div = createGridCell(i, color);
         grid.appendChild(div);
       }
-      updateGridTemplate();
     });
 
     socket.on('checkboxUpdate', (data) => {
       const div = grid.querySelector(`div[data-id='${data.id}']`);
-      div.style.backgroundColor = data.color;
+      if (div) {
+        div.style.backgroundColor = data.color;
+      }
     });
 
     function zoomIn() {
