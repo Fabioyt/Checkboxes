@@ -10,10 +10,10 @@ const io = socketIo(server);
 
 // Verbinde mit der MySQL-Datenbank von InfinityFree
 const db = mysql.createConnection({
-  host: 'sql208.infinityfree.com',  
-  user: 'if0_37015942',
-  password: '7S12OTN8XfpTJk',
-  database: 'if0_37015942_checkboxes'
+  host: process.env.DB_HOST,  
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME
 });
 
 db.connect(err => {
