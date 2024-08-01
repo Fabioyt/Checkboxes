@@ -35,6 +35,18 @@
       padding: 10px;
       font-size: 16px;
     }
+    .notification {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      z-index: 1000;
+    }
 
     /* Mobile Styles */
     @media (max-width: 600px) {
@@ -67,11 +79,13 @@
     <span>Time left to expand canvas: <span id="time-left"></span></span>
   </div>
   <div id="checkbox-grid" class="checkbox-grid"></div>
+  <div id="notification" class="notification"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
     const grid = document.getElementById('checkbox-grid');
     const timeLeftDisplay = document.getElementById('time-left');
+    const notification = document.getElementById('notification');
     let selectedColor = '#FFFFFF'; // Initial color
     let cellSize = 20; // Initial cell size
     let columns = 50;
@@ -126,7 +140,7 @@
     });
 
     socket.on('cooldown', (data) => {
-      alert(`You are on cooldown. Please wait ${data.timeLeft} seconds before making another move.`);
+      showNotification(`You are on cooldown. Please wait ${data.timeLeft} seconds before making another move.`);
     });
 
     function zoomIn() {
@@ -169,6 +183,14 @@
         const secs = seconds % 60;
         timeLeftDisplay.textContent = `${hours}h ${minutes}m ${secs}s`;
       }, 1000);
+    }
+
+    function showNotification(message) {
+      notification.textContent = message;
+      notification.style.display = 'block';
+      setTimeout(() => {
+        notification.style.display = 'none';
+      }, 5000);
     }
 
     function getRandomColor() {
