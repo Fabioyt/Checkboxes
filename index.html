@@ -6,7 +6,6 @@
   <style>
     .checkbox-grid {
       display: grid;
-      grid-template-columns: repeat(50, 20px); /* Set initial number of columns */
       gap: 1px;
       justify-content: center;
     }
@@ -58,7 +57,6 @@
     <div style="background-color: #FFFF00;" onclick="selectColor('#FFFF00')"></div>
     <div style="background-color: #FF00FF;" onclick="selectColor('#FF00FF')"></div>
     <div style="background-color: #00FFFF;" onclick="selectColor('#00FFFF')"></div>
-    <div style="background-color: #FFFFFF;" onclick="selectColor('#FFFFFF')"></div>
   </div>
   <div class="zoom-buttons">
     <button onclick="zoomIn()">Zoom In</button>
@@ -71,6 +69,8 @@
     const grid = document.getElementById('checkbox-grid');
     let selectedColor = '#FF0000';
     let cellSize = 20; // Initial cell size
+    let columns = 50;
+    let rows = 20;
 
     function selectColor(color) {
       selectedColor = color;
@@ -95,14 +95,16 @@
 
     socket.emit('getInitialData');
 
-    socket.on('initialData', (checkboxes) => {
+    socket.on('initialData', (data) => {
       grid.innerHTML = ''; // Clear the grid
+      columns = data.columns;
+      rows = data.rows;
       const positions = new Map();
-      checkboxes.forEach(cb => {
+      data.checkboxes.forEach(cb => {
         positions.set(cb.id, cb.color);
       });
 
-      for (let i = 0; i < 2000; i++) {
+      for (let i = 0; i < columns * rows; i++) {
         const color = positions.get(i);
         const div = createGridCell(i, color);
         grid.appendChild(div);
@@ -139,20 +141,10 @@
     }
 
     function updateGridTemplate() {
-      const columns = 50; // Set the number of columns you want
       grid.style.gridTemplateColumns = `repeat(${columns}, ${cellSize}px)`;
-      const rows = Math.ceil(1000 / columns); // Adjust based on the number of cells
       grid.style.gridTemplateRows = `repeat(${rows}, ${cellSize}px)`;
     }
 
-    function getRandomColor() {
-      const letters = '0123456789ABCDEF';
-      let color = '#';
-      for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-      }
-      return color;
-    }
-  </script>
-</body>
-</html>
+   
+</script>
+</body></html>
