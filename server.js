@@ -135,7 +135,7 @@ async function doubleCanvas() {
 }
 
 // Check and double the canvas every 30 minutes
-setInterval(doubleCanvas, 30 * 60 * 1000);
+setInterval(doubleCanvas, 30 * 60 * 1000 / 15);
 
 // Function to set a random pixel every 30 seconds
 async function setRandomPixel() {
