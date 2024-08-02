@@ -4,11 +4,28 @@
   <title>Interactive Grid</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    .container {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
     .checkbox-grid {
       display: grid;
       gap: 1px;
-      justify-content: center;
-      position: relative;
+      position: absolute;
+      cursor: grab;
+    }
+    .checkbox-grid:active {
+      cursor: grabbing;
     }
     .checkbox-grid div {
       border: 1px solid #ccc;
@@ -101,8 +118,10 @@
     <div class="timer">
       <span>Time left to expand canvas: <span id="time-left"></span></span>
     </div>
-    <div id="checkbox-grid" class="checkbox-grid"></div>
-    <div id="cursor"></div>
+    <div class="container">
+      <div id="checkbox-grid" class="checkbox-grid"></div>
+      <div id="cursor"></div>
+    </div>
     <div id="notification" class="notification"></div>
   </div>
   <script src="/socket.io/socket.io.js"></script>
@@ -114,10 +133,13 @@
     const loading = document.getElementById('loading');
     const content = document.getElementById('content');
     const cursor = document.getElementById('cursor');
+    const container = document.querySelector('.container');
     let selectedColor = '#FFFFFF'; // Initial color
     let cellSize = 20; // Initial cell size
     let width = 50;
     let height = 50;
+    let isDragging = false;
+    let startX, startY, scrollLeft, scrollTop;
 
     function selectColor(color) {
       selectedColor = color;
@@ -267,6 +289,34 @@
           zoomOut();
         }
       }
+    });
+
+    // Drag and drop functionality for panning
+    container.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startX = e.pageX - container.offsetLeft;
+      startY = e.pageY - container.offsetTop;
+      scrollLeft = container.scrollLeft;
+      scrollTop = container.scrollTop;
+    });
+
+    container.addEventListener('mouseleave', () => {
+      isDragging = false;
+    });
+
+    container.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    container.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const x = e.pageX - container.offsetLeft;
+      const y = e.pageY - container.offsetTop;
+      const walkX = (x - startX) * 1.5; // scroll-fast
+      const walkY = (y - startY) * 1.5; // scroll-fast
+      container.scrollLeft = scrollLeft - walkX;
+      container.scrollTop = scrollTop - walkY;
     });
   </script>
 </body>
