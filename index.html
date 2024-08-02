@@ -47,6 +47,14 @@
       border-radius: 5px;
       z-index: 1000;
     }
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-size: 24px;
+      font-weight: bold;
+    }
 
     /* Mobile Styles */
     @media (max-width: 600px) {
@@ -62,30 +70,35 @@
   </style>
 </head>
 <body>
-  <div class="palette">
-    <div style="background-color: #FFFFFF; border-color: #000;" onclick="selectColor('#FFFFFF')"></div>
-    <div style="background-color: #FF0000;" onclick="selectColor('#FF0000')"></div>
-    <div style="background-color: #00FF00;" onclick="selectColor('#00FF00')"></div>
-    <div style="background-color: #0000FF;" onclick="selectColor('#0000FF')"></div>
-    <div style="background-color: #FFFF00;" onclick="selectColor('#FFFF00')"></div>
-    <div style="background-color: #FF00FF;" onclick="selectColor('#FF00FF')"></div>
-    <div style="background-color: #00FFFF;" onclick="selectColor('#00FFFF')"></div>
+  <div id="loading" class="loading">Loading...</div>
+  <div style="display:none;" id="content">
+    <div class="palette">
+      <div style="background-color: #FFFFFF; border-color: #000;" onclick="selectColor('#FFFFFF')"></div>
+      <div style="background-color: #FF0000;" onclick="selectColor('#FF0000')"></div>
+      <div style="background-color: #00FF00;" onclick="selectColor('#00FF00')"></div>
+      <div style="background-color: #0000FF;" onclick="selectColor('#0000FF')"></div>
+      <div style="background-color: #FFFF00;" onclick="selectColor('#FFFF00')"></div>
+      <div style="background-color: #FF00FF;" onclick="selectColor('#FF00FF')"></div>
+      <div style="background-color: #00FFFF;" onclick="selectColor('#00FFFF')"></div>
+    </div>
+    <div class="zoom-buttons">
+      <button onclick="zoomIn()">Zoom In</button>
+      <button onclick="zoomOut()">Zoom Out</button>
+    </div>
+    <div class="timer">
+      <span>Time left to expand canvas: <span id="time-left"></span></span>
+    </div>
+    <div id="checkbox-grid" class="checkbox-grid"></div>
+    <div id="notification" class="notification"></div>
   </div>
-  <div class="zoom-buttons">
-    <button onclick="zoomIn()">Zoom In</button>
-    <button onclick="zoomOut()">Zoom Out</button>
-  </div>
-  <div class="timer">
-    <span>Time left to expand canvas: <span id="time-left"></span></span>
-  </div>
-  <div id="checkbox-grid" class="checkbox-grid"></div>
-  <div id="notification" class="notification"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
     const grid = document.getElementById('checkbox-grid');
     const timeLeftDisplay = document.getElementById('time-left');
     const notification = document.getElementById('notification');
+    const loading = document.getElementById('loading');
+    const content = document.getElementById('content');
     let selectedColor = '#FFFFFF'; // Initial color
     let cellSize = 20; // Initial cell size
     let width = 50;
@@ -127,14 +140,16 @@
         positions.set(cb.id, { x: cb.x, y: cb.y, color: cb.color });
       });
 
-      for (let i = 0; i < width * height; i++) {
-        const cell = positions.get(i);
-        if (cell) {
-          const div = createGridCell(i, cell.x, cell.y, cell.color);
-          grid.appendChild(div);
-        }
-      }
+      // Correct loop to create cells
+      positions.forEach((cell, id) => {
+        const div = createGridCell(id, cell.x, cell.y, cell.color);
+        grid.appendChild(div);
+      });
       updateGridTemplate();
+
+      // Hide loading and show content
+      loading.style.display = 'none';
+      content.style.display = 'block';
     });
 
     socket.on('checkboxUpdate', (data) => {
