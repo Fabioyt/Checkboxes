@@ -137,10 +137,10 @@
       div.addEventListener('click', () => {
         socket.emit('checkboxClicked', { id, color: selectedColor });
       });
-      div.addEventListener('mouseover', () => {
+      div.addEventListener('mouseover', (event) => {
         const rect = div.getBoundingClientRect();
-        cursor.style.top = `${rect.top}px`;
-        cursor.style.left = `${rect.left}px`;
+        cursor.style.top = `${rect.top + window.scrollY}px`;
+        cursor.style.left = `${rect.left + window.scrollX}px`;
         cursor.style.width = `${div.offsetWidth}px`;
         cursor.style.height = `${div.offsetHeight}px`;
         cursor.style.display = 'block';
