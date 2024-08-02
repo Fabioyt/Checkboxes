@@ -48,6 +48,20 @@ async function initializeMeta() {
       height: 50
     });
     await meta.save();
+
+    // Create initial 50x50 grid
+    const initialCheckboxes = [];
+    for (let y = 0; y < 50; y++) {
+      for (let x = 0; x < 50; x++) {
+        initialCheckboxes.push(new Checkbox({
+          id: y * 50 + x,
+          x: x,
+          y: y,
+          color: '#FFFFFF' // initial color
+        }));
+      }
+    }
+    await Checkbox.insertMany(initialCheckboxes);
   }
 }
 
@@ -139,4 +153,3 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
-
