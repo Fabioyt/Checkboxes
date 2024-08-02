@@ -3,6 +3,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const path = require('path');
 
 dotenv.config();
 
@@ -40,7 +41,10 @@ mongoose.connect(process.env.MONGODB_URI, {
   console.error('Failed to connect to MongoDB', err);
 });
 
-app.use(express.static('public'));
+// Serve the index.html file from the root directory
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 io.on('connection', socket => {
   console.log('A user connected');
