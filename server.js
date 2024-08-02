@@ -61,7 +61,7 @@ let userCooldowns = {};
 async function doubleCanvas() {
   const meta = await Meta.findOne({});
   const currentTime = new Date();
-  const twoDaysInMs = 2 * 24 * 60 * 60 * 1000 / 4 ;
+  const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
 
   if (currentTime - new Date(meta.lastDoubled) > twoDaysInMs) {
     const newWidth = meta.width * 2;
