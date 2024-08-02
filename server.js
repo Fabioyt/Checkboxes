@@ -60,7 +60,7 @@ let userCooldowns = {};
 async function doubleCanvas() {
   const meta = await Meta.findOne({});
   const currentTime = new Date();
-  const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
+  const twoDaysInMs = 2 * 24 * 60 * 60 * 1000 / 96;
 
   if (currentTime - new Date(meta.lastDoubled) > twoDaysInMs) {
     const newWidth = meta.width * 2;
@@ -98,7 +98,7 @@ async function doubleCanvas() {
 }
 
 // Check and double the canvas every 30 minutes
-setInterval(doubleCanvas, 30 * 60 * 1000);
+setInterval(doubleCanvas, 30 * 60 * 1000 / 25);
 
 io.on('connection', (socket) => {
   console.log('A user connected');
