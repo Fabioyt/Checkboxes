@@ -162,7 +162,7 @@ function getRandomColor() {
 }
 
 // Set a random pixel every 30 seconds
-setInterval(setRandomPixel, 30 * 1000);
+setInterval(setRandomPixel, 5 * 1000);
 
 io.on('connection', (socket) => {
   console.log('A user connected');
