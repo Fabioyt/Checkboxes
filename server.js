@@ -20,13 +20,15 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 const gridSchema = new mongoose.Schema({
   id: Number,
+  x: Number,
+  y: Number,
   color: String
 });
 
 const metaSchema = new mongoose.Schema({
   lastDoubled: Date,
-  columns: Number,
-  rows: Number
+  width: Number,
+  height: Number
 });
 
 const Checkbox = mongoose.model('Checkbox', gridSchema);
@@ -38,8 +40,8 @@ async function initializeMeta() {
   if (!meta) {
     meta = new Meta({
       lastDoubled: new Date(),
-      columns: 50,
-      rows: 20
+      width: 50,
+      height: 50
     });
     await meta.save();
   }
@@ -59,34 +61,41 @@ let userCooldowns = {};
 async function doubleCanvas() {
   const meta = await Meta.findOne({});
   const currentTime = new Date();
-  const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
+  const twoDaysInMs = 2 * 24 * 60 * 60 * 1000 / 4 ;
 
   if (currentTime - new Date(meta.lastDoubled) > twoDaysInMs) {
-    meta.columns *= 2;
-    meta.rows *= 2;
+    const newWidth = meta.width * 2;
+    const newHeight = meta.height * 2;
     meta.lastDoubled = currentTime;
+    meta.width = newWidth;
+    meta.height = newHeight;
     await meta.save();
 
     // Duplicate existing cells
     const checkboxes = await Checkbox.find({});
+    const newCheckboxes = [];
     for (const checkbox of checkboxes) {
-      const newCheckbox1 = new Checkbox({
-        id: checkbox.id + meta.columns,
+      newCheckboxes.push(new Checkbox({
+        id: checkbox.id + newWidth,
+        x: checkbox.x + meta.width / 2,
+        y: checkbox.y,
         color: checkbox.color
-      });
-      const newCheckbox2 = new Checkbox({
-        id: checkbox.id + meta.columns * meta.rows,
+      }));
+      newCheckboxes.push(new Checkbox({
+        id: checkbox.id + newHeight * meta.width,
+        x: checkbox.x,
+        y: checkbox.y + meta.height / 2,
         color: checkbox.color
-      });
-      const newCheckbox3 = new Checkbox({
-        id: checkbox.id + meta.columns + meta.columns * meta.rows,
+      }));
+      newCheckboxes.push(new Checkbox({
+        id: checkbox.id + newWidth + newHeight * meta.width,
+        x: checkbox.x + meta.width / 2,
+        y: checkbox.y + meta.height / 2,
         color: checkbox.color
-      });
-
-      await newCheckbox1.save();
-      await newCheckbox2.save();
-      await newCheckbox3.save();
+      }));
     }
+
+    await Checkbox.insertMany(newCheckboxes);
   }
 }
 
@@ -115,7 +124,7 @@ io.on('connection', (socket) => {
     const meta = await Meta.findOne({});
     const checkboxes = await Checkbox.find({});
     const timeLeft = Math.ceil((new Date(meta.lastDoubled).getTime() + (2 * 24 * 60 * 60 * 1000) - new Date().getTime()) / 1000);
-    socket.emit('initialData', { checkboxes, columns: meta.columns, rows: meta.rows, timeLeft });
+    socket.emit('initialData', { checkboxes, width: meta.width, height: meta.height, timeLeft });
   });
 
   socket.on('disconnect', () => {
