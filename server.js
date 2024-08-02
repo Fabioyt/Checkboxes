@@ -134,6 +134,33 @@ async function doubleCanvas() {
 // Check and double the canvas every 30 minutes
 setInterval(doubleCanvas, 30 * 60 * 1000);
 
+// Function to set a random pixel every 30 seconds
+async function setRandomPixel() {
+  const meta = await Meta.findOne({});
+  if (!meta) return;
+
+  const randomX = Math.floor(Math.random() * meta.width);
+  const randomY = Math.floor(Math.random() * meta.height);
+  const randomColor = getRandomColor();
+
+  const id = randomY * meta.width + randomX;
+  await Checkbox.findOneAndUpdate({ id: id }, { x: randomX, y: randomY, color: randomColor }, { upsert: true });
+  io.emit('checkboxUpdate', { id: id, color: randomColor });
+}
+
+// Function to generate a random color
+function getRandomColor() {
+  const letters = '0123456789ABCDEF';
+  let color = '#';
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+}
+
+// Set a random pixel every 30 seconds
+setInterval(setRandomPixel, 30 * 1000);
+
 io.on('connection', (socket) => {
   console.log('A user connected');
 
