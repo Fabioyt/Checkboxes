@@ -75,6 +75,10 @@
         width: 30px;
         height: 30px;
       }
+      #cursor {
+        width: 30px;
+        height: 30px;
+      }
     }
   </style>
 </head>
@@ -134,8 +138,9 @@
         socket.emit('checkboxClicked', { id, color: selectedColor });
       });
       div.addEventListener('mouseover', () => {
-        cursor.style.top = `${div.offsetTop}px`;
-        cursor.style.left = `${div.offsetLeft}px`;
+        const rect = div.getBoundingClientRect();
+        cursor.style.top = `${rect.top}px`;
+        cursor.style.left = `${rect.left}px`;
         cursor.style.width = `${div.offsetWidth}px`;
         cursor.style.height = `${div.offsetHeight}px`;
         cursor.style.display = 'block';
