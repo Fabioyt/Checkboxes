@@ -117,6 +117,7 @@
     socket.emit('getInitialData');
 
     socket.on('initialData', (data) => {
+      console.log('Received initial data:', data.checkboxes.length, 'checkboxes');
       grid.innerHTML = ''; // Clear the grid
       width = data.width;
       height = data.height;
@@ -128,8 +129,10 @@
 
       for (let i = 0; i < width * height; i++) {
         const cell = positions.get(i);
-        const div = createGridCell(i, cell.x, cell.y, cell.color);
-        grid.appendChild(div);
+        if (cell) {
+          const div = createGridCell(i, cell.x, cell.y, cell.color);
+          grid.appendChild(div);
+        }
       }
       updateGridTemplate();
     });
