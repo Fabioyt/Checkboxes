@@ -94,24 +94,36 @@ async function doubleCanvas() {
 
     const checkboxes = await Checkbox.find({});
     const newCheckboxes = [];
+
     for (const checkbox of checkboxes) {
+      const x = checkbox.x;
+      const y = checkbox.y;
+      const color = checkbox.color;
+
+      // Create new checkboxes in the four quadrants
       newCheckboxes.push(new Checkbox({
-        id: checkbox.id + newWidth,
-        x: checkbox.x + meta.width / 2,
-        y: checkbox.y,
-        color: checkbox.color
+        id: checkbox.id,
+        x: x,
+        y: y,
+        color: color
       }));
       newCheckboxes.push(new Checkbox({
-        id: checkbox.id + newHeight * meta.width,
-        x: checkbox.x,
-        y: checkbox.y + meta.height / 2,
-        color: checkbox.color
+        id: checkbox.id + meta.width / 2,
+        x: x + meta.width / 2,
+        y: y,
+        color: color
       }));
       newCheckboxes.push(new Checkbox({
-        id: checkbox.id + newWidth + newHeight * meta.width,
-        x: checkbox.x + meta.width / 2,
-        y: checkbox.y + meta.height / 2,
-        color: checkbox.color
+        id: checkbox.id + meta.height * meta.width / 2,
+        x: x,
+        y: y + meta.height / 2,
+        color: color
+      }));
+      newCheckboxes.push(new Checkbox({
+        id: checkbox.id + meta.width / 2 + meta.height * meta.width / 2,
+        x: x + meta.width / 2,
+        y: y + meta.height / 2,
+        color: color
       }));
     }
 
