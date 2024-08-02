@@ -53,7 +53,7 @@ async function initializeMeta() {
 
 initializeMeta();
 
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname)));
 
 // Route for the homepage
 app.get('/', (req, res) => {
@@ -127,43 +127,7 @@ io.on('connection', (socket) => {
     const meta = await Meta.findOne({});
     const checkboxes = await Checkbox.find({});
     console.log('Sending initial data:', checkboxes.length, 'checkboxes');
-    const timeLeft = Math.ceil((new Date(meta.lastDoubled).getTime() + oneHourInMs - new Date().getTime()) / 1000);
-    socket.emit('initialData', { checkboxes, width: meta.width, height: meta.height, timeLeft });
-  });
-
-  socket.on('disconnect', () => {
-    console.log('A user disconnected');
-    delete userCooldowns[socket.id];
-  });
-});
-
-
-// Check and double the canvas every 30 minutes
-setInterval(doubleCanvas, 30 * 60 * 1000);
-
-io.on('connection', (socket) => {
-  console.log('A user connected');
-
-  socket.on('checkboxClicked', async (data) => {
-    const userId = socket.id;
-    if (userCooldowns[userId] && userCooldowns[userId] > Date.now()) {
-      const timeLeft = Math.ceil((userCooldowns[userId] - Date.now()) / 1000);
-      socket.emit('cooldown', { timeLeft });
-      return;
-    }
-
-    const color = data.color;
-    await Checkbox.findOneAndUpdate({ id: data.id }, { color }, { upsert: true });
-    io.emit('checkboxUpdate', { id: data.id, color });
-
-    userCooldowns[userId] = Date.now() + 5000; // 5 seconds cooldown
-  });
-
-  socket.on('getInitialData', async () => {
-    const meta = await Meta.findOne({});
-    const checkboxes = await Checkbox.find({});
-    console.log('Sending initial data:', checkboxes.length, 'checkboxes');
-    const timeLeft = Math.ceil((new Date(meta.lastDoubled).getTime() + (2 * 24 * 60 * 60 * 1000) - new Date().getTime()) / 1000);
+    const timeLeft = Math.ceil((new Date(meta.lastDoubled).getTime() + (60 * 60 * 1000) - new Date().getTime()) / 1000);
     socket.emit('initialData', { checkboxes, width: meta.width, height: meta.height, timeLeft });
   });
 
