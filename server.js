@@ -39,7 +39,7 @@ const metaSchema = new mongoose.Schema({
 const Checkbox = mongoose.model('Checkbox', gridSchema);
 const Meta = mongoose.model('Meta', metaSchema);
 
-async function initializeMeta() {
+async function initializeMetaAndGrid() {
   let meta = await Meta.findOne({});
   if (!meta) {
     meta = new Meta({
@@ -48,7 +48,10 @@ async function initializeMeta() {
       height: 50
     });
     await meta.save();
+  }
 
+  const checkboxCount = await Checkbox.countDocuments();
+  if (checkboxCount === 0) {
     // Create initial 50x50 grid
     const initialCheckboxes = [];
     for (let y = 0; y < 50; y++) {
@@ -65,7 +68,7 @@ async function initializeMeta() {
   }
 }
 
-initializeMeta();
+initializeMetaAndGrid();
 
 app.use(express.static(path.join(__dirname)));
 
