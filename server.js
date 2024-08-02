@@ -39,7 +39,6 @@ const metaSchema = new mongoose.Schema({
 const Checkbox = mongoose.model('Checkbox', gridSchema);
 const Meta = mongoose.model('Meta', metaSchema);
 
-// Initialize Meta data if not exist
 async function initializeMeta() {
   let meta = await Meta.findOne({});
   if (!meta) {
@@ -54,11 +53,11 @@ async function initializeMeta() {
 
 initializeMeta();
 
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Route for the homepage
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 let userCooldowns = {};
@@ -66,7 +65,7 @@ let userCooldowns = {};
 async function doubleCanvas() {
   const meta = await Meta.findOne({});
   const currentTime = new Date();
-  const twoDaysInMs = 2 * 24 * 60 * 60 * 1000 / 96;
+  const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
 
   if (currentTime - new Date(meta.lastDoubled) > twoDaysInMs) {
     const newWidth = meta.width * 2;
@@ -76,7 +75,6 @@ async function doubleCanvas() {
     meta.height = newHeight;
     await meta.save();
 
-    // Duplicate existing cells
     const checkboxes = await Checkbox.find({});
     const newCheckboxes = [];
     for (const checkbox of checkboxes) {
@@ -105,7 +103,7 @@ async function doubleCanvas() {
 }
 
 // Check and double the canvas every 30 minutes
-setInterval(doubleCanvas, 30 * 60 * 1000 / 25);
+setInterval(doubleCanvas, 30 * 60 * 1000);
 
 io.on('connection', (socket) => {
   console.log('A user connected');
@@ -129,7 +127,7 @@ io.on('connection', (socket) => {
     const meta = await Meta.findOne({});
     const checkboxes = await Checkbox.find({});
     console.log('Sending initial data:', checkboxes.length, 'checkboxes');
-    const timeLeft = Math.ceil((new Date(meta.lastDoubled).getTime() + (2 * 24 * 60 * 60 * 1000 / 96) - new Date().getTime()) / 1000);
+    const timeLeft = Math.ceil((new Date(meta.lastDoubled).getTime() + (2 * 24 * 60 * 60 * 1000) - new Date().getTime()) / 1000);
     socket.emit('initialData', { checkboxes, width: meta.width, height: meta.height, timeLeft });
   });
 
