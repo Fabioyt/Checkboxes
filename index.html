@@ -216,10 +216,6 @@
         cellSize -= 5;
         updateGridSize();
       }
-      else if(cellSize > 0) {
-        cellSize -= 1;
-        updateGridSize();
-      }
     }
 
     function updateGridSize() {
@@ -320,6 +316,42 @@
       requestAnimationFrame(() => {
         const x = e.pageX - container.offsetLeft;
         const y = e.pageY - container.offsetTop;
+        const walkX = (x - startX) * 0.5; // scroll speed
+        const walkY = (y - startY) * 0.5; // scroll speed
+        container.scrollLeft = scrollLeft - walkX;
+        container.scrollTop = scrollTop - walkY;
+      });
+    });
+
+    // Touch events for mobile devices
+    container.addEventListener('touchstart', (e) => {
+      if (currentTool === 'move') {
+        isDragging = true;
+        const touch = e.touches[0];
+        startX = touch.pageX - container.offsetLeft;
+        startY = touch.pageY - container.offsetTop;
+        scrollLeft = container.scrollLeft;
+        scrollTop = container.scrollTop;
+        container.style.cursor = 'grabbing';
+      }
+    });
+
+    container.addEventListener('touchend', () => {
+      if (isDragging) {
+        isDragging = false;
+        if (currentTool === 'move') {
+          container.style.cursor = 'grab';
+        }
+      }
+    });
+
+    container.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      requestAnimationFrame(() => {
+        const x = touch.pageX - container.offsetLeft;
+        const y = touch.pageY - container.offsetTop;
         const walkX = (x - startX) * 0.5; // scroll speed
         const walkY = (y - startY) * 0.5; // scroll speed
         container.scrollLeft = scrollLeft - walkX;
