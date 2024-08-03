@@ -7,10 +7,16 @@
     body {
       margin: 0;
       overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      width: 100vw;
+      position: relative;
     }
     .container {
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -27,15 +33,28 @@
       border: 1px solid #ccc;
       cursor: pointer;
     }
-    .palette {
+    .controls {
       display: flex;
       justify-content: center;
-      margin-bottom: 20px;
+      align-items: center;
+      gap: 10px;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+    .palette, .zoom-buttons, .timer {
+      display: flex;
+      gap: 10px;
     }
     .palette div, .tool {
       width: 20px;
       height: 20px;
-      margin-right: 5px;
       cursor: pointer;
       border: 1px solid #000;
     }
@@ -44,20 +63,14 @@
       align-items: center;
       justify-content: center;
     }
-    .zoom-buttons, .timer {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 20px;
-    }
     .zoom-buttons button, .timer span {
-      margin: 0 10px;
       padding: 10px;
       font-size: 16px;
     }
     .notification {
       display: none;
       position: fixed;
-      bottom: 20px;
+      bottom: 60px;
       left: 50%;
       transform: translateX(-50%);
       background-color: rgba(0, 0, 0, 0.7);
@@ -90,7 +103,11 @@
 </head>
 <body>
   <div id="loading" class="loading">Loading...</div>
-  <div style="display:none;" id="content">
+  <div style="display:none;" id="content" class="container">
+    <div id="checkbox-grid" class="checkbox-grid"></div>
+    <div id="notification" class="notification"></div>
+  </div>
+  <div class="controls">
     <div class="palette">
       <div style="background-color: #FFFFFF;" onclick="selectColor('#FFFFFF')"></div>
       <div style="background-color: #FF0000;" onclick="selectColor('#FF0000')"></div>
@@ -108,10 +125,6 @@
     <div class="timer">
       <span>Time left to expand canvas: <span id="time-left"></span></span>
     </div>
-    <div class="container">
-      <div id="checkbox-grid" class="checkbox-grid"></div>
-    </div>
-    <div id="notification" class="notification"></div>
   </div>
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -123,20 +136,12 @@
     const content = document.getElementById('content');
     const container = document.querySelector('.container');
     let selectedColor = '#FFFFFF'; // Initial color
-    let cellSize; // Initial cell size will be calculated
+    let cellSize = 20; // Initial cell size
     let width = 250;
     let height = 250;
     let isDragging = false;
     let startX, startY, scrollLeft, scrollTop;
     let currentTool = 'color'; // Initial tool
-
-    function calculateInitialCellSize() {
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      const maxWidth = Math.floor(viewportWidth / width);
-      const maxHeight = Math.floor(viewportHeight / height);
-      return Math.min(maxWidth, maxHeight);
-    }
 
     function selectColor(color) {
       selectedColor = color;
@@ -172,7 +177,6 @@
       grid.innerHTML = ''; // Clear the grid
       width = data.width;
       height = data.height;
-      cellSize = calculateInitialCellSize(); // Calculate initial cell size
       updateTimer(data.timeLeft);
       const positions = new Map();
       data.checkboxes.forEach(cb => {
@@ -189,6 +193,7 @@
         }
       }
       updateGridTemplate();
+      fitGridToScreen();
 
       // Hide loading and show content
       loading.style.display = 'none';
@@ -214,6 +219,10 @@
     function zoomOut() {
       if (cellSize > 10) {
         cellSize -= 5;
+        updateGridSize();
+      }
+      else if (cellSize > 0) {
+        cellSize -= 1;
         updateGridSize();
       }
     }
@@ -323,13 +332,12 @@
       });
     });
 
-    // Touch events for mobile devices
+    // Touch support for mobile
     container.addEventListener('touchstart', (e) => {
       if (currentTool === 'move') {
         isDragging = true;
-        const touch = e.touches[0];
-        startX = touch.pageX - container.offsetLeft;
-        startY = touch.pageY - container.offsetTop;
+        startX = e.touches[0].pageX - container.offsetLeft;
+        startY = e.touches[0].pageY - container.offsetTop;
         scrollLeft = container.scrollLeft;
         scrollTop = container.scrollTop;
         container.style.cursor = 'grabbing';
@@ -348,16 +356,30 @@
     container.addEventListener('touchmove', (e) => {
       if (!isDragging) return;
       e.preventDefault();
-      const touch = e.touches[0];
       requestAnimationFrame(() => {
-        const x = touch.pageX - container.offsetLeft;
-        const y = touch.pageY - container.offsetTop;
+        const x = e.touches[0].pageX - container.offsetLeft;
+        const y = e.touches[0].pageY - container.offsetTop;
         const walkX = (x - startX) * 0.5; // scroll speed
         const walkY = (y - startY) * 0.5; // scroll speed
         container.scrollLeft = scrollLeft - walkX;
         container.scrollTop = scrollTop - walkY;
       });
     });
+
+    function fitGridToScreen() {
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      const maxCellWidth = Math.floor(containerWidth / (width / 2)) ; // Scale to double the size
+      const maxCellHeight = Math.floor(containerHeight / (height / 2)); // Scale to double the size
+      cellSize = Math.min(maxCellWidth , maxCellHeight );
+      zoomIn()
+      while(cellSize > 5) {
+        zoomOut()
+      }
+      updateGridSize();
+      container.scrollLeft = (grid.scrollWidth - containerWidth) / 2;
+      container.scrollTop = (grid.scrollHeight - containerHeight) / 2;
+    }
   </script>
 </body>
 </html>
