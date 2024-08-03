@@ -22,10 +22,6 @@
       display: grid;
       gap: 1px;
       position: absolute;
-      cursor: grab;
-    }
-    .checkbox-grid:active {
-      cursor: grabbing;
     }
     .checkbox-grid div {
       border: 1px solid #ccc;
@@ -36,12 +32,17 @@
       justify-content: center;
       margin-bottom: 20px;
     }
-    .palette div {
+    .palette div, .tool {
       width: 20px;
       height: 20px;
       margin-right: 5px;
       cursor: pointer;
       border: 1px solid #000;
+    }
+    .tool {
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .zoom-buttons, .timer {
       display: flex;
@@ -73,14 +74,6 @@
       font-size: 24px;
       font-weight: bold;
     }
-    #cursor {
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      background-color: rgba(0, 0, 0, 0.5);
-      pointer-events: none;
-      display: none;
-    }
 
     /* Mobile Styles */
     @media (max-width: 600px) {
@@ -88,11 +81,7 @@
         width: 30px;
         height: 30px;
       }
-      .palette div {
-        width: 30px;
-        height: 30px;
-      }
-      #cursor {
+      .palette div, .tool {
         width: 30px;
         height: 30px;
       }
@@ -103,13 +92,14 @@
   <div id="loading" class="loading">Loading...</div>
   <div style="display:none;" id="content">
     <div class="palette">
-      <div style="background-color: #FFFFFF; border-color: #000;" onclick="selectColor('#FFFFFF')"></div>
+      <div style="background-color: #FFFFFF;" onclick="selectColor('#FFFFFF')"></div>
       <div style="background-color: #FF0000;" onclick="selectColor('#FF0000')"></div>
       <div style="background-color: #00FF00;" onclick="selectColor('#00FF00')"></div>
       <div style="background-color: #0000FF;" onclick="selectColor('#0000FF')"></div>
       <div style="background-color: #FFFF00;" onclick="selectColor('#FFFF00')"></div>
       <div style="background-color: #FF00FF;" onclick="selectColor('#FF00FF')"></div>
       <div style="background-color: #00FFFF;" onclick="selectColor('#00FFFF')"></div>
+      <div class="tool" onclick="selectMoveTool()">🔀</div>
     </div>
     <div class="zoom-buttons">
       <button onclick="zoomIn()">Zoom In</button>
@@ -120,7 +110,6 @@
     </div>
     <div class="container">
       <div id="checkbox-grid" class="checkbox-grid"></div>
-      <div id="cursor"></div>
     </div>
     <div id="notification" class="notification"></div>
   </div>
@@ -132,18 +121,32 @@
     const notification = document.getElementById('notification');
     const loading = document.getElementById('loading');
     const content = document.getElementById('content');
-    const cursor = document.getElementById('cursor');
     const container = document.querySelector('.container');
     let selectedColor = '#FFFFFF'; // Initial color
-    let cellSize = 20; // Initial cell size
-    let width = 50;
-    let height = 50;
+    let cellSize; // Initial cell size will be calculated
+    let width = 250;
+    let height = 250;
     let isDragging = false;
     let startX, startY, scrollLeft, scrollTop;
+    let currentTool = 'color'; // Initial tool
+
+    function calculateInitialCellSize() {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const maxWidth = Math.floor(viewportWidth / width);
+      const maxHeight = Math.floor(viewportHeight / height);
+      return Math.min(maxWidth, maxHeight);
+    }
 
     function selectColor(color) {
       selectedColor = color;
-      cursor.style.backgroundColor = color;
+      currentTool = 'color';
+      container.style.cursor = 'default';
+    }
+
+    function selectMoveTool() {
+      currentTool = 'move';
+      container.style.cursor = 'grab';
     }
 
     function createGridCell(id, x, y, color) {
@@ -153,22 +156,11 @@
       div.style.gridRowStart = y + 1;
       div.style.width = `${cellSize}px`;
       div.style.height = `${cellSize}px`;
-      if (color) {
-        div.style.backgroundColor = color;
-      }
+      div.style.backgroundColor = color || '#FFFFFF';
       div.addEventListener('click', () => {
-        socket.emit('checkboxClicked', { id, color: selectedColor });
-      });
-      div.addEventListener('mouseover', (event) => {
-        const rect = div.getBoundingClientRect();
-        cursor.style.top = `${rect.top + window.scrollY}px`;
-        cursor.style.left = `${rect.left + window.scrollX}px`;
-        cursor.style.width = `${div.offsetWidth}px`;
-        cursor.style.height = `${div.offsetHeight}px`;
-        cursor.style.display = 'block';
-      });
-      div.addEventListener('mouseout', () => {
-        cursor.style.display = 'none';
+        if (currentTool === 'color') {
+          socket.emit('checkboxClicked', { id, color: selectedColor });
+        }
       });
       return div;
     }
@@ -180,16 +172,22 @@
       grid.innerHTML = ''; // Clear the grid
       width = data.width;
       height = data.height;
+      cellSize = calculateInitialCellSize(); // Calculate initial cell size
       updateTimer(data.timeLeft);
       const positions = new Map();
       data.checkboxes.forEach(cb => {
-        positions.set(cb.id, { x: cb.x, y: cb.y, color: cb.color });
+        const [_, x, y] = cb.id.split('-').map(Number);
+        positions.set(cb.id, { x, y, color: cb.color });
       });
 
-      positions.forEach((cell, id) => {
-        const div = createGridCell(id, cell.x, cell.y, cell.color);
-        grid.appendChild(div);
-      });
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const id = `initial-${x}-${y}`;
+          const cell = positions.get(id) || { x, y, color: '#FFFFFF' };
+          const div = createGridCell(id, cell.x, cell.y, cell.color);
+          grid.appendChild(div);
+        }
+      }
       updateGridTemplate();
 
       // Hide loading and show content
@@ -216,6 +214,10 @@
     function zoomOut() {
       if (cellSize > 10) {
         cellSize -= 5;
+        updateGridSize();
+      }
+      else if(cellSize > 0) {
+        cellSize -= 1;
         updateGridSize();
       }
     }
@@ -258,15 +260,6 @@
       }, 5000);
     }
 
-    function getRandomColor() {
-      const letters = '0123456789ABCDEF';
-      let color = '#';
-      for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-      }
-      return color;
-    }
-
     // Prevent default zoom behavior and handle custom zoom
     document.addEventListener('wheel', (e) => {
       if (e.ctrlKey) {
@@ -293,30 +286,45 @@
 
     // Drag and drop functionality for panning
     container.addEventListener('mousedown', (e) => {
-      isDragging = true;
-      startX = e.pageX - container.offsetLeft;
-      startY = e.pageY - container.offsetTop;
-      scrollLeft = container.scrollLeft;
-      scrollTop = container.scrollTop;
+      if (currentTool === 'move') {
+        isDragging = true;
+        startX = e.pageX - container.offsetLeft;
+        startY = e.pageY - container.offsetTop;
+        scrollLeft = container.scrollLeft;
+        scrollTop = container.scrollTop;
+        container.style.cursor = 'grabbing';
+      }
     });
 
     container.addEventListener('mouseleave', () => {
-      isDragging = false;
+      if (isDragging) {
+        isDragging = false;
+        if (currentTool === 'move') {
+          container.style.cursor = 'grab';
+        }
+      }
     });
 
     container.addEventListener('mouseup', () => {
-      isDragging = false;
+      if (isDragging) {
+        isDragging = false;
+        if (currentTool === 'move') {
+          container.style.cursor = 'grab';
+        }
+      }
     });
 
     container.addEventListener('mousemove', (e) => {
       if (!isDragging) return;
       e.preventDefault();
-      const x = e.pageX - container.offsetLeft;
-      const y = e.pageY - container.offsetTop;
-      const walkX = (x - startX) * 1.5; // scroll-fast
-      const walkY = (y - startY) * 1.5; // scroll-fast
-      container.scrollLeft = scrollLeft - walkX;
-      container.scrollTop = scrollTop - walkY;
+      requestAnimationFrame(() => {
+        const x = e.pageX - container.offsetLeft;
+        const y = e.pageY - container.offsetTop;
+        const walkX = (x - startX) * 0.5; // scroll speed
+        const walkY = (y - startY) * 0.5; // scroll speed
+        container.scrollLeft = scrollLeft - walkX;
+        container.scrollTop = scrollTop - walkY;
+      });
     });
   </script>
 </body>
